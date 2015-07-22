@@ -3,6 +3,7 @@
 
 #include <string>
 #include <memory>
+
 #include <FreeImage.h>
 
 namespace detail
@@ -17,20 +18,20 @@ public:
 	typedef std::shared_ptr<FIBITMAP>   QRBitmap;
 
 public:
-	QREncoder(const std::string& str, const RGBQUAD& clr_background = detail::WHITE, const RGBQUAD& clr_foreground = detail::BLACK);
+	QREncoder(const std::string& str, const uint32_t size, const uint32_t marign, const RGBQUAD& clr_background = detail::WHITE, const RGBQUAD& clr_foreground = detail::BLACK);
 	~QREncoder();
 
 public:
-	void output(const FREE_IMAGE_FORMAT type, const std::wstring& file_name, const uint32_t size, bool logo = true);
+	void output(const FREE_IMAGE_FORMAT type, const std::wstring& file_name, bool logo = true);
 
 	void load_logo(const FREE_IMAGE_FORMAT type, const std::wstring& logo_file);
 
 	QRBitmap& get_img_ptr() { return m_qr_bitmap_; }
 
 private:
-	void generate(const std::string& str);
+	void generate(const std::string& str, const uint32_t size, const uint32_t marign);
 
-	void resize(const uint32_t size);
+	void fill_region(const float left, const float top, const float right, const float bottom);
 
 private:
 	QRBitmap		  m_qr_bitmap_;

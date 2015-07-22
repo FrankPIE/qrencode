@@ -7,11 +7,11 @@
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	QREncoder encoder("http://124.207.5.194:7000/panorama/vistandard/9c577624-3880-4d02-ad4-70911c22bc71/panorama.html");
+	QREncoder encoder("http://www.baidu.com", 300, 10);
 
 	encoder.load_logo(FIF_BMP, L".\\logo.bmp");
 
-	encoder.output(FIF_BMP, L"E:\\test1.bmp", 200);
+	encoder.output(FIF_BMP, L"E:\\test1.bmp", true);
 
 	return 0;
 }

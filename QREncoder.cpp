@@ -3,42 +3,57 @@
 
 #include <qrencode.h>
 
-QREncoder::QREncoder(const std::string& str, const RGBQUAD& clr_background /*= detail::WHITE*/, const RGBQUAD& clr_foreground /*= detail::BLACK*/)
+QREncoder::QREncoder(const std::string& str, const uint32_t size, const uint32_t marign, const RGBQUAD& clr_background /*= detail::WHITE*/, const RGBQUAD& clr_foreground /*= detail::BLACK*/)
 		: m_clr_background_(clr_background), m_clr_foreground_(clr_foreground)
 {
-	generate(str);
+	generate(str, size, marign);
 }
 
 QREncoder::~QREncoder()
 { }
 
-void QREncoder::generate(const std::string& str)
+void QREncoder::output( const FREE_IMAGE_FORMAT type, const std::wstring& file_name, bool logo )
 {
-	auto qrcode = QRcode_encodeString8bit(str.c_str(), 0, QR_ECLEVEL_H);
+	if (logo && m_logo_bitmap_)
+	{
+		auto size = FreeImage_GetWidth(m_qr_bitmap_.get());
 
-	auto real_width = qrcode->width + 2;
+		m_logo_bitmap_ = std::shared_ptr<FIBITMAP>(FreeImage_Rescale(m_logo_bitmap_.get(), size / 6, size / 6, FILTER_BILINEAR), [&](FIBITMAP *ptr) { FreeImage_Unload(ptr); });
 
-	m_qr_bitmap_ 
-		= std::shared_ptr<FIBITMAP>(FreeImage_Allocate(real_width, real_width, 32), [&](FIBITMAP *ptr) { FreeImage_Unload(ptr); });
+		auto logo_size = size / 6;
+		auto half_logo_size = logo_size / 2;
+
+		FreeImage_Paste(m_qr_bitmap_.get(), m_logo_bitmap_.get(), size / 2 - half_logo_size, size / 2 - half_logo_size, 256);
+	}
+
+	FreeImage_SaveU(type, m_qr_bitmap_.get(), file_name.c_str());
+}
+
+void QREncoder::generate(const std::string& str, const uint32_t size, const uint32_t marign)
+{
+	auto qrcode_ptr = std::shared_ptr<QRcode>(QRcode_encodeString8bit(str.c_str(), 0, QR_ECLEVEL_H), [&](QRcode* ptr) { QRcode_free(ptr); });
+
+	m_qr_bitmap_
+		= std::shared_ptr<FIBITMAP>(FreeImage_Allocate(size, size, 32), [&](FIBITMAP *ptr) { FreeImage_Unload(ptr); });
 
 	FreeImage_FillBackground(m_qr_bitmap_.get(), &m_clr_background_);
 
-	for (auto y = 0; y < qrcode->width; ++y)
-	{
-		auto r_y = qrcode->width - y;
+	auto mulriple = static_cast<float>(size - marign * 2) / static_cast<float>(qrcode_ptr->width);
 
-		for (auto x = 0; x < qrcode->width; ++x)
+	for (auto y = 0; y < qrcode_ptr->width; ++y)
+	{
+		auto dy = qrcode_ptr->width - y - 1;
+
+		for (auto x = 0; x < qrcode_ptr->width; ++x)
 		{
-			auto b = qrcode->data[y * qrcode->width + x];
+			auto b = qrcode_ptr->data[y * qrcode_ptr->width + x];
 
 			if (b & 0x01)
 			{
-				FreeImage_SetPixelColor(m_qr_bitmap_.get(), x + 1, r_y, &m_clr_foreground_);
+				fill_region(x * mulriple + marign, dy * mulriple + marign, (x + 1) * mulriple + marign, (dy + 1) * mulriple + marign);
 			}
 		}
 	}
-
-	QRcode_free(qrcode);
 }
 
 void QREncoder::load_logo(const FREE_IMAGE_FORMAT type, const std::wstring& logo_file)
@@ -46,30 +61,29 @@ void QREncoder::load_logo(const FREE_IMAGE_FORMAT type, const std::wstring& logo
 	m_logo_bitmap_ = std::shared_ptr<FIBITMAP>(FreeImage_LoadU(type, logo_file.c_str()), [&](FIBITMAP *ptr) { FreeImage_Unload(ptr); });
 }
 
-void QREncoder::resize(const uint32_t size)
+void QREncoder::fill_region(const float left, const float top, const float right, const float bottom)
 {
-	if (size > 0)
+	if (m_qr_bitmap_)
 	{
-		m_qr_bitmap_ = std::shared_ptr<FIBITMAP>(FreeImage_Rescale(m_qr_bitmap_.get(), size, size, FILTER_BOX), [&](FIBITMAP *ptr) { FreeImage_Unload(ptr); });
+		auto width  = static_cast<float>(FreeImage_GetWidth(m_qr_bitmap_.get()));
+		auto height = static_cast<float>(FreeImage_GetHeight(m_qr_bitmap_.get()));
 
-		if (m_logo_bitmap_)
+		for (auto y = top; y < bottom; ++y)
 		{
-			m_logo_bitmap_ = std::shared_ptr<FIBITMAP>(FreeImage_Rescale(m_logo_bitmap_.get(), size / 6, size / 6, FILTER_BILINEAR), [&](FIBITMAP *ptr) { FreeImage_Unload(ptr); });
+			if (y < 0.f && y > height) 
+			{
+				continue;
+			}
+
+			for (auto x = left; x < right; ++x)
+			{
+				if (x < 0.f && x > width)
+				{
+					continue;
+				}
+
+				FreeImage_SetPixelColor(m_qr_bitmap_.get(), static_cast<uint32_t>(x), static_cast<uint32_t>(y), &m_clr_foreground_);
+			}
 		}
 	}
-}
-
-void QREncoder::output(const FREE_IMAGE_FORMAT type, const std::wstring& file_name, const uint32_t size, bool logo /*= true*/)
-{
-	resize(size);
-
-	if (logo && m_logo_bitmap_)
-	{
-		auto logo_size = size / 6;
-		auto half_logo_size = logo_size / 2;
-
-		FreeImage_Paste(m_qr_bitmap_.get(), m_logo_bitmap_.get(), size / 2 - half_logo_size, size / 2 - half_logo_size, 255);
-	}
-
-	FreeImage_SaveU(type, m_qr_bitmap_.get(), file_name.c_str());
 }
