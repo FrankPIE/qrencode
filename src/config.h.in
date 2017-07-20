@@ -1,0 +1,22 @@
+#ifndef __QRENCODE_CONFIG_H__
+#define __QRENCODE_CONFIG_H__
+
+#define QRENCODE_STRINGIFY(x) QRENCODE_DO_STRINGIFY(x)
+#define QRENCODE_DO_STRINGIFY(x) #x
+
+#define MAJOR_VERSION @QRENCODE_VERSION_MAJOR@
+#define MINOR_VERSION @QRENCODE_VERSION_MINOR@
+#define MICRO_VERSION @QRENCODE_VERSION_MICRO@
+
+#define VERSION QRENCODE_DO_STRINGIFY(MAJOR_VERSION.MINOR_VERSION.MICRO_VERSION)
+
+#define __STATIC static
+
+#if defined(_WIN32) || defined(_WIN64)
+  #define snprintf _snprintf
+  #define vsnprintf _vsnprintf
+  #define strcasecmp _stricmp
+  #define strncasecmp _strnicmp
+#endif
+
+#endif 
