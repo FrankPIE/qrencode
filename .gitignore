@@ -317,3 +317,4 @@ __pycache__/
 
 # End of https://www.gitignore.io/api/cmake,visualstudio,visualstudiocode
 buildvs/
+build/
