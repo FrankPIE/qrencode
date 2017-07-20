@@ -14,8 +14,8 @@ configure_file(
     "${PROJECT_BINARY_DIR}/config.h"
 )
 
-#include 
-include_directories("${PROJECT_BINARY_DIR}/src")
-include_directories("${PROJECT_BINARY_DIR}")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/Lib)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/Lib)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/Bin)
 
-target_link_libraries(QREncode )
+add_subdirectory(${PROJECT_SOURCE_DIR}/src)
